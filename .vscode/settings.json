@@ -1,0 +1,15 @@
+{
+    "[html][django-html][jinja-html]": {
+        "editor.defaultFormatter": "monosans.djlint"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        }
+    },
+    "ruff.enable": true,
+    "ruff.organizeImports": true
+}

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+        }
+        .text-center { text-align: center; }
+        .header {
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .summary-box {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-table { width: 100%; border: none; }
+        .summary-td { width: 33%; text-align: center; }
+        
+        .chart-container { text-align: center; margin-top: 20px; margin-bottom: 20px; }
+        .chart-img { width: 550px; height: auto; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background-color: #f2f2f2; text-align: left; font-size: 12px; padding: 8px; border-bottom: 2px solid #333; }
+        td { border-bottom: 1px solid #eee; padding: 8px; font-size: 11px; }
+        
+        .text-success { color: #198754; font-weight: bold; }
+        .text-danger { color: #dc3545; font-weight: bold; }
+        .page-break { page-break-after: always; }
+        
+        /* Utility for the summary logic */
+        .balance-box { font-size: 1.2em; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header text-center">
+        <h1>Kharcha {{ report_type|default:""|title }} Financial Report</h1>
+        <p>User: {{ user.username }} | Period: {{ start_date|default:"All Time" }} to {{ end_date|default:"Today" }}</p>
+    </div>
+
+    <div class="summary-box">
+        <table class="summary-table">
+            <tr>
+                {% if report_type != 'expense' %}
+                <td class="summary-td">
+                    <strong>Total Income</strong><br>
+                    <span class="text-success">NPR {{ total_income|floatformat:2 }}</span>
+                </td>
+                {% endif %}
+                
+                {% if report_type != 'income' %}
+                <td class="summary-td">
+                    <strong>Total Expenses</strong><br>
+                    <span class="text-danger">NPR {{ total_expense|floatformat:2 }}</span>
+                </td>
+                {% endif %}
+
+                <td class="summary-td">
+                    <strong>Net Balance</strong><br>
+                    <span class="balance-box {% if balance > 0 %}text-success{% elif balance < 0 %}text-danger{% endif %}">
+                        NPR {{ balance|floatformat:2 }}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {% if line_chart %}
+    <div class="chart-container">
+        <h3>{{ report_type|default:"Income vs Expense"|title }} Trend</h3>
+        <img src="{{ line_chart }}" class="chart-img">
+    </div>
+    {% endif %}
+
+    {% if pie_chart %}
+    <div class="chart-container">
+        <h3>Expense Distribution</h3>
+        <img src="{{ pie_chart }}" style="width: 400px;">
+    </div>
+    {% endif %}
+
+    {% if income or expenses %}
+    <div class="page-break"></div>
+    {% endif %}
+
+    {% if report_type != 'expense' and income %}
+    <h3>Income Details</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Source</th>
+                <th>Category</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in income %}
+            <tr>
+                <td>{{ item.date_received|date:"M d, Y" }}</td>
+                <td>{{ item.source }}</td>
+                <td>{{ item.category.name|default:"Uncategorized" }}</td>
+                <td class="text-success" style="text-align: right;">+{{ item.amount|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if report_type != 'income' and expenses %}
+    <div style="margin-top: 30px;">
+        <h3>Expense Details</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th style="text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in expenses %}
+                <tr>
+                    <td>{{ item.date_spent|date:"M d, Y" }}</td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.category.name|default:"Uncategorized" }}</td>
+                    <td class="text-danger" style="text-align: right;">-{{ item.amount|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 50px; text-align: center; font-size: 10px; color: #888;">
+        Report generated on {{ today|date:"M d, Y" }} via Kharcha App.
+    </div>
+</body>
+</html>

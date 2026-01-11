@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block content %}
+{% load custom_filters %}
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 bg-light min-vh-100 pb-5">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Income Records</h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'export_pdf' %}?period={{ current_period }}&q={{ search_query }}&category={{ selected_category|default_if_none:'' }}&type=income" 
+               class="btn btn-outline-dark shadow-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#addIncomeModal">
+                <i class="bi bi-plus-lg"></i> Add Income
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="q" class="form-control" placeholder="Search source..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="period" class="form-select">
+                        <option value="this_month" {% if current_period == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_week" {% if current_period == 'last_week' %}selected{% endif %}>Last 7 Days</option>
+                        <option value="last_month" {% if current_period == 'last_month' %}selected{% endif %}>Last Month</option>
+                        <option value="last_year" {% if current_period == 'last_year' %}selected{% endif %}>Last Year</option>
+                        <option value="all" {% if current_period == 'all' %}selected{% endif %}>All Time</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100">Filter</button>
+                    <a href="{% url 'income_page' %}" class="btn btn-outline-secondary w-100">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    {% if chart_trend %}{{ chart_trend|safe }}{% else %}<p class="text-center py-5 text-muted">No trend data available.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    {% if chart_pie %}{{ chart_pie|safe }}{% else %}<p class="text-center py-5 text-muted">No source data available.</p>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 bg-success text-white">
+        <div class="card-body py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="text-uppercase small fw-bold opacity-75 mb-1">Total Income ({{ current_period|replace:"_, "|title }})</h6>
+                <h3 class="fw-bold mb-0">NPR {{ total_income|floatformat:2 }}</h3>
+            </div>
+            <i class="bi bi-graph-up-arrow fs-1 opacity-25"></i>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Date</th>
+                        <th>Source / Account</th>
+                        <th>Category</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center">Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in incomes %}
+                    <tr>
+                        <td class="ps-3 small text-muted">{{ inc.date_received|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="fw-bold">{{ inc.source }}</div>
+                            <small class="text-muted"><i class="bi bi-wallet2"></i> {{ inc.account.name }}</small>
+                        </td>
+                        <td><span class="badge border text-dark fw-normal">{{ inc.category.name|default:"Uncategorized" }}</span></td>
+                        <td class="text-end fw-bold text-success">+NPR {{ inc.amount|floatformat:2 }}</td>
+                        <td class="text-center">
+                            {% if inc.is_recurring %}
+                                <span class="badge bg-info text-dark">{{ inc.recurring_interval|capfirst }}</span>
+                            {% else %}
+                                <span class="text-muted small">One-time</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center py-5 text-muted">No records found for this period.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if incomes.has_other_pages %}
+        <div class="card-footer bg-white border-top-0 py-3">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if incomes.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ incomes.previous_page_number }}&q={{ search_query }}&category={{ selected_category }}&period={{ current_period }}">Prev</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">{{ incomes.number }}</span></li>
+                    {% if incomes.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ incomes.next_page_number }}&q={{ search_query }}&category={{ selected_category }}&period={{ current_period }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</main>
+
+<div class="modal fade" id="addIncomeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" class="modal-content border-0 shadow">
+            {% csrf_token %}
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Add New Income</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Source</label>
+                    <input type="text" name="source" class="form-control" placeholder="e.g. Freelance Pay" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold small">Amount (NPR)</label>
+                        <input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold small">Date</label>
+                        <input type="date" name="date_received" class="form-control" value="{{ today_date }}" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold small">Category</label>
+                        <select name="category" class="form-select" required>
+                            <option value="" disabled selected>Select Category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold small">Deposit To (Account)</label>
+                        <select name="account" class="form-select" required>
+                            <option value="" disabled selected>Select Account</option>
+                            {% for acc in accounts %}
+                            <option value="{{ acc.id }}">{{ acc.name }} (NPR {{ acc.balance|floatformat:0 }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <hr class="text-muted">
+                
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="is_recurring" id="modalRecurSwitch">
+                    <label class="form-check-label small fw-bold" for="modalRecurSwitch">Set as Recurring Income</label>
+                </div>
+                <div id="modalIntervalDiv" class="d-none">
+                    <label class="form-label small text-muted">Frequency</label>
+                    <select name="recurring_interval" class="form-select form-select-sm">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-success px-4 shadow-sm">Save Income Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Toggle recurring interval visibility
+    document.getElementById('modalRecurSwitch').addEventListener('change', function() {
+        document.getElementById('modalIntervalDiv').classList.toggle('d-none', !this.checked);
+    });
+</script>
+{% endblock content %}

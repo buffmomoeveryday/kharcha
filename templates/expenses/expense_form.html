@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 bg-light min-vh-100 pb-5">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{{ title|default:"Add Expense" }}</h1>
+        <a href="{% url 'expense_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Expense Description</label>
+                            <input type="text" name="title" class="form-control" placeholder="e.g. Weekly Groceries" 
+                                   value="{{ expense.title|default:'' }}" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small">Amount (NPR)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-muted">Rs.</span>
+                                    <input type="number" step="0.01" name="amount" class="form-control border-start-0" 
+                                           placeholder="0.00" value="{{ expense.amount|default:'' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small">Date Spent</label>
+                                <input type="date" name="date_spent" class="form-control" 
+                                       value="{{ expense.date_spent|date:'Y-m-d'|default:today_date }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small">Category</label>
+                                <select name="category" class="form-select" required>
+                                    <option value="" disabled {% if not expense %}selected{% endif %}>Select Category</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if expense.category.id == cat.id %}selected{% endif %}>
+                                        {{ cat.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small">Paid From (Account)</label>
+                                <select name="account" class="form-select" required>
+                                    <option value="" disabled {% if not expense %}selected{% endif %}>Select Account</option>
+                                    {% for acc in accounts %}
+                                    <option value="{{ acc.id }}" {% if expense.account.id == acc.id %}selected{% endif %}>
+                                        {{ acc.name }} (Rs. {{ acc.balance }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text xsmall">Balance will be auto-deducted.</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Tags</label>
+                            <input type="text" name="tags" class="form-control form-control-sm" placeholder="e.g. food, office, travel" 
+                                   value="{{ expense.tags|default:'' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Notes</label>
+                            <textarea name="notes" class="form-control form-control-sm" rows="2">{{ expense.notes|default:'' }}</textarea>
+                        </div>
+
+                        <hr class="my-4 text-muted opacity-25">
+
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="recurringToggle" name="is_recurring" 
+                                           {% if expense.is_recurring %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold small" for="recurringToggle">Recurring Expense?</label>
+                                </div>
+                                <div id="recurringOptions" class="mt-3 {% if not expense.is_recurring %}d-none{% endif %}">
+                                    <label class="form-label small text-muted">Bill Cycle</label>
+                                    <select name="recurring_interval" class="form-select form-select-sm">
+                                        <option value="none" {% if expense.recurring_interval == 'none' %}selected{% endif %}>None</option>
+                                        <option value="daily" {% if expense.recurring_interval == 'daily' %}selected{% endif %}>Daily</option>
+                                        <option value="weekly" {% if expense.recurring_interval == 'weekly' %}selected{% endif %}>Weekly</option>
+                                        <option value="monthly" {% if expense.recurring_interval == 'monthly' or not expense %}selected{% endif %}>Monthly</option>
+                                        <option value="yearly" {% if expense.recurring_interval == 'yearly' %}selected{% endif %}>Yearly</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary py-2 shadow-sm">
+                                <i class="bi bi-check-circle-fill me-1"></i> Save Expense
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    document.getElementById('recurringToggle').addEventListener('change', function() {
+        const options = document.getElementById('recurringOptions');
+        options.classList.toggle('d-none', !this.checked);
+    });
+</script>
+{% endblock content %}

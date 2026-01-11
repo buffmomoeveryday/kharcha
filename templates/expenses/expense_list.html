@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 bg-light min-vh-100 pb-5">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Expense Records</h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'export_pdf' %}?period={{ current_period }}&q={{ search_query }}&category={% if selected_category %}{{ selected_category }}{% endif %}&type=expense"
+               class="btn btn-outline-dark shadow-sm">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+            <a href="{% url 'add_expense' %}" class="btn btn-danger shadow-sm">
+                <i class="bi bi-plus-lg"></i> Add New Expense
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="text-uppercase small fw-bold opacity-75">Liquid Cash</h6>
+                    <h3 class="fw-bold mb-0">NPR {{ total_cash|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body">
+                    <h6 class="text-uppercase small fw-bold opacity-75">Filtered Total ({{ current_period|replace:"_, "|title }})</h6>
+                    <h3 class="fw-bold mb-0">NPR {{ total_spent|default:0|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-dark text-white">
+                <div class="card-body">
+                    <h6 class="text-uppercase small fw-bold opacity-75">Net Worth</h6>
+                    <h3 class="fw-bold mb-0">NPR {{ net_worth|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="q" class="form-control" placeholder="Search by name..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"i" %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="period" class="form-select">
+                        <option value="this_month" {% if current_period == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_week" {% if current_period == 'last_week' %}selected{% endif %}>Last 7 Days</option>
+                        <option value="last_month" {% if current_period == 'last_month' %}selected{% endif %}>Last Month</option>
+                        <option value="last_year" {% if current_period == 'last_year' %}selected{% endif %}>Last Year</option>
+                        <option value="all" {% if current_period == 'all' %}selected{% endif %}>All Time</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-dark w-100">Filter</button>
+                    <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary w-100">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-5 mb-3 mb-lg-0">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    {% if pie_chart %}{{ pie_chart|safe }}{% else %}<div class="text-center py-5 text-muted small">No category breakdown.</div>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    {% if bar_chart %}{{ bar_chart|safe }}{% else %}<div class="text-center py-5 text-muted small">No trend data available.</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Date</th>
+                        <th>Title</th>
+                        <th>Account</th> <th>Category</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td class="ps-3 small text-muted">{{ expense.date_spent|date:"M d, Y" }}</td>
+                        <td class="fw-bold">{{ expense.title }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-wallet2 me-1"></i> {{ expense.account.name }}
+                            </span>
+                        </td>
+                        <td><span class="badge bg-info-subtle text-info border border-info">{{ expense.category.name }}</span></td>
+                        <td class="text-end fw-bold text-danger">-NPR {{ expense.amount|floatformat:2 }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'edit_expense' expense.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                            <a href="{% url 'delete_expense' expense.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-5 text-muted">No records found for this period.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if expenses.has_other_pages %}
+        <div class="card-footer bg-white border-top-0 py-3">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if expenses.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ expenses.previous_page_number }}&q={{ search_query }}&category={{ selected_category }}&period={{ current_period }}">Prev</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">{{ expenses.number }}</span></li>
+                    {% if expenses.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ expenses.next_page_number }}&q={{ search_query }}&category={{ selected_category }}&period={{ current_period }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock content %}

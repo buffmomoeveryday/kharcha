@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 bg-light min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 text-center">
+                <div class="mb-4">
+                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+                </div>
+                
+                <h3 class="fw-bold mb-3">Delete Expense?</h3>
+                <p class="text-muted mb-4">
+                    Are you sure you want to delete <strong>"{{ expense.title }}"</strong>?<br>
+                    An amount of <strong>NPR {{ expense.amount|floatformat:2 }}</strong> will be refunded to your <strong>{{ expense.account.name }}</strong> account.
+                </p>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger py-2 fw-bold">
+                            <i class="bi bi-trash me-1"></i> Yes, Delete and Refund
+                        </button>
+                        <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary py-2">
+                            Cancel, Keep Record
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-white border-top-0 pb-4 text-center">
+                <small class="text-muted xsmall text-uppercase tracking-wider">This action can be undone by an administrator.</small>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock content %}

@@ -1,0 +1,69 @@
+{% extends "unauth_base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow border-0">
+                <div class="card-body p-4 p-md-5">
+                  {% if messages %}
+                      {% for message in messages %}
+                          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                              {{ message }}
+                              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                          </div>
+                      {% endfor %}
+                  {% endif %}
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-primary">Login</h2>
+                        <p class="text-muted">Welcome back! Please sign in.</p>
+                    </div>
+
+                    <form method="post" action="{% url 'login' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label fw-semibold">Email Address</label>
+                            <input type="email" 
+                                   name="email" 
+                                   class="form-control form-control-lg" 
+                                   id="userEmail" 
+                                   placeholder="name@example.com" 
+                                   required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="userPassword" class="form-label fw-semibold">Password</label>
+                            <input type="password" 
+                                   name="password" 
+                                   class="form-control form-control-lg" 
+                                   id="userPassword" 
+                                   placeholder="Enter your password"
+                                   required>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                Sign In
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0 text-muted">New User? 
+                            <a href="{% url 'registration' %}" class="text-decoration-none fw-bold">Register Here</a>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="#" class="text-muted small text-decoration-none">Forgot password?</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

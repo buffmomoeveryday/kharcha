@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Kharcha {% endblock title %}
+
+{% block content %}
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 bg-light min-vh-100 pb-5">
+    
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Financial Overview</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <button type="button" class="btn btn-sm btn-primary shadow-sm me-2" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="bi bi-plus-circle"></i> Add Category
+            </button>
+            <a href="{% url 'export_report' %}?start={{ request.GET.start }}&end={{ request.GET.end }}" class="btn btn-sm btn-outline-secondary shadow-sm me-2">
+                <i class="bi bi-download"></i> CSV
+            </a>
+            <a href="{% url 'export_pdf' %}?start={{ request.GET.start }}&end={{ request.GET.end }}" class="btn btn-sm btn-danger shadow-sm">
+                <i class="bi bi-file-pdf"></i> PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        {% for budget in budget_data %}
+            {% if budget.is_alert %}
+            <div class="col-md-4 mb-3">
+                <div class="alert {% if budget.percent >= 100 %}alert-danger{% else %}alert-warning{% endif %} shadow-sm border-0 mb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-uppercase small"><i class="bi bi-exclamation-octagon-fill"></i> {{ budget.name }}</span>
+                        <span class="badge {% if budget.percent >= 100 %}bg-danger{% else %}bg-dark{% endif %}">{{ budget.percent|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar {% if budget.percent >= 100 %}bg-danger{% else %}bg-warning{% endif %}" 
+                             style="width: {% if budget.percent > 100 %}100{% else %}{{ budget.percent }}{% endif %}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <form method="get" class="card-body row g-2 align-items-center">
+            <div class="col-auto">
+                <label class="small text-muted fw-bold">From:</label>
+                <input type="date" name="start" class="form-control form-control-sm" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-auto">
+                <label class="small text-muted fw-bold">To:</label>
+                <input type="date" name="end" class="form-control form-control-sm" value="{{ end_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-auto align-self-end">
+                <button type="submit" class="btn btn-sm btn-primary px-3">Filter</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-light border">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-bottom border-success border-4">
+                <div class="card-body">
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Total Income</p>
+                    <h3 class="fw-bold text-success">NPR {{ total_income|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-bottom border-danger border-4">
+                <div class="card-body">
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Total Expenses</p>
+                    <h3 class="fw-bold text-danger">NPR {{ total_expense|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm border-bottom border-warning border-4">
+                <div class="card-body">
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Recurring Bills</p>
+                    <h3 class="fw-bold text-warning">NPR {{ total_recurring|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4 g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 p-3 h-100">
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-graph-up"></i> Cash Flow Trend</h6>
+                {{ chart_html|safe }}
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 p-3 h-100">
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-pie-chart"></i> Expense Split</h6>
+                {{ pie_chart_html|safe }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
+                    <a href="{% url 'all_transactions' %}" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th class="px-3">Description</th>
+                                <th>Category</th>
+                                <th class="text-end px-3">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_transactions %}
+                            <tr>
+                                <td class="px-3">
+                                    <div class="fw-bold">{% if item.title %}{{ item.title }}{% else %}{{ item.source }}{% endif %}</div>
+                                    <small class="text-muted">{{ item.transaction_date|date:"d M" }} • {{ item.payment_method|title }}</small>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ item.category.name }}</span></td>
+                                <td class="text-end px-3 fw-bold {% if item.title %}text-danger{% else %}text-success{% endif %}">
+                                    {% if item.title %}-{% else %}+{% endif %}{{ item.amount|floatformat:0 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0 text-secondary">Budget Performance</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th class="px-3">Category</th>
+                                <th>Usage</th>
+                                <th class="text-end px-3">Rem.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for budget in budget_data %}
+                            <tr>
+                                <td class="px-3">
+                                    <div class="fw-bold small">{{ budget.name }}</div>
+                                    <small class="text-muted">of NPR {{ budget.limit|floatformat:0 }}</small>
+                                </td>
+                                <td style="width: 40%;">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar {% if budget.percent >= 100 %}bg-danger{% elif budget.percent >= 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                                             style="width: {% if budget.percent > 100 %}100{% else %}{{ budget.percent }}{% endif %}%"></div>
+                                    </div>
+                                </td>
+                                <td class="text-end px-3 small fw-bold {% if budget.remaining < 0 %}text-danger{% endif %}">
+                                    {{ budget.remaining|floatformat:0 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'quick_add_category' %}" class="modal-content border-0 shadow">
+            {% csrf_token %}
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-tag"></i> Create New Category</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Category Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Dining Out" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Type</label>
+                        <select name="category_type" class="form-select">
+                            <option value="expense">Expense</option>
+                            <option value="income">Income</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Monthly Budget</label>
+                        <input type="number" name="budget_limit" class="form-control" placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary px-4">Save Category</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

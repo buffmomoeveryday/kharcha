@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    /* Custom Fin-Tech Styling */
+    .metric-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-radius: 16px;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    .account-card {
+        border: 1px solid rgba(0,0,0,0.05);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    .account-card:hover {
+        border-color: var(--bs-primary);
+        background-color: #fff;
+    }
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
+    .table thead th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: #6c757d;
+        border-top: none;
+    }
+    .progress-thin { height: 6px; border-radius: 3px; }
+    .btn-rounded { border-radius: 10px; padding: 0.6rem 1.2rem; }
+</style>
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 bg-light min-vh-100 pb-5">
+    <div class="d-flex justify-content-between align-items-center pt-4 pb-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">Accounts Dashboard</h2>
+            <p class="text-muted small mb-0">Manage your liquidity, debts, and internal transfers.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-white border shadow-sm btn-rounded fw-bold" data-bs-toggle="modal" data-bs-target="#transferModal">
+                <i class="bi bi-arrow-left-right me-2"></i> Transfer
+            </button>
+            <button class="btn btn-primary shadow btn-rounded fw-bold px-4" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                <i class="bi bi-plus-lg me-2"></i> Add Account
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card metric-card border-0 shadow-sm bg-primary text-white p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="icon-box bg-white bg-opacity-25"><i class="bi bi-layers-fill fs-4"></i></div>
+                    <span class="badge bg-white bg-opacity-25 rounded-pill">Total</span>
+                </div>
+                <small class="text-white-50 text-uppercase fw-bold ls-1">Net Worth</small>
+                <h3 class="mb-0 fw-bold mt-1">NPR {{ net_worth|floatformat:2 }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card border-0 shadow-sm p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary"><i class="bi bi-bank fs-4"></i></div>
+                </div>
+                <small class="text-muted text-uppercase fw-bold ls-1">Bank Balance</small>
+                <h3 class="mb-0 fw-bold mt-1 text-dark">NPR {{ total_balance|floatformat:2 }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card border-0 shadow-sm p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="icon-box bg-success bg-opacity-10 text-success"><i class="bi bi-arrow-down-left-circle fs-4"></i></div>
+                </div>
+                <small class="text-muted text-uppercase fw-bold ls-1">Receivables</small>
+                <h3 class="mb-0 fw-bold mt-1 text-success">NPR {{ receivables|floatformat:2 }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card border-0 shadow-sm p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="icon-box bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-up-right-circle fs-4"></i></div>
+                </div>
+                <small class="text-muted text-uppercase fw-bold ls-1">Payables</small>
+                <h3 class="mb-0 fw-bold mt-1 text-danger">NPR {{ payables|floatformat:2 }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">Active Accounts</h5>
+                <span class="badge bg-secondary-subtle text-secondary rounded-pill">{{ accounts|length }} Accounts</span>
+            </div>
+            <div class="row g-3">
+                {% for acc in accounts %}
+                <div class="col-md-6">
+                    <div class="card account-card shadow-sm p-3">
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-box bg-light me-3">
+                                    {% if acc.account_type == 'cash' %}<i class="bi bi-cash-stack text-success fs-4"></i>
+                                    {% elif acc.account_type == 'savings' %}<i class="bi bi-bank text-primary fs-4"></i>
+                                    {% else %}<i class="bi bi-credit-card text-info fs-4"></i>{% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ acc.name }}</h6>
+                                    <small class="text-muted">{{ acc.get_account_type_display }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="mb-0 fw-bold">NPR {{ acc.balance|floatformat:2 }}</h5>
+                                <small class="text-success" style="font-size: 0.7rem;"><i class="bi bi-check-circle"></i> Active</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+                    <i class="bi bi-wallet2 fs-1 text-light mb-3 d-block"></i>
+                    <p class="text-muted">No accounts found. Start by adding one.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4">
+                <div class="card-body p-4 text-center">
+                    <h6 class="fw-bold text-dark text-start mb-4">Balance Distribution</h6>
+                    <div class="py-2">
+                        {% if chart_wealth %}
+                            {{ chart_wealth|safe }}
+                        {% else %}
+                            <div class="py-5">
+                                <i class="bi bi-pie-chart fs-1 text-light"></i>
+                                <p class="text-muted small mt-2">Charts appear once you have balances.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white py-3 border-0">
+                <h5 class="fw-bold mb-0">Recent Internal Transfers</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Date</th>
+                            <th>From Account</th>
+                            <th></th>
+                            <th>To Account</th>
+                            <th class="text-end pe-4">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transfer in recent_transfers %}
+                        <tr>
+                            <td class="ps-4 text-muted small">{{ transfer.timestamp|date:"M d, Y" }}</td>
+                            <td class="fw-bold text-dark">{{ transfer.from_account.name }}</td>
+                            <td class="text-center text-muted"><i class="bi bi-arrow-right"></i></td>
+                            <td class="fw-bold text-dark">{{ transfer.to_account.name }}</td>
+                            <td class="text-end pe-4">
+                                <span class="badge bg-light text-dark fw-bold fs-6">NPR {{ transfer.amount|floatformat:2 }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-5 text-muted">No transfer history found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="modal fade" id="addAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" class="modal-content border-0 shadow-lg rounded-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_account">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="fw-bold">New Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Account Name</label>
+                    <input type="text" name="name" class="form-control form-control-lg border-light bg-light" placeholder="e.g. Nabil Bank" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label small fw-bold text-muted">Type</label>
+                        <select name="account_type" class="form-select border-light bg-light">
+                            {% for code, label in account_types %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label small fw-bold text-muted">Opening Balance</label>
+                        <input type="number" name="balance" class="form-control border-light bg-light" value="0.00" step="0.01">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 btn-rounded fw-bold mt-3">Create Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'process_transfer' %}" class="modal-content border-0 shadow">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title">Internal Money Transfer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">From Account</label>
+                    <select name="from_account" class="form-select" required>
+                        {% for acc in accounts %}<option value="{{ acc.id }}">{{ acc.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="text-center mb-3"><i class="bi bi-arrow-down fs-4 text-muted"></i></div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">To Account</label>
+                    <select name="to_account" class="form-select" required>
+                        {% for acc in accounts %}<option value="{{ acc.id }}">{{ acc.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Amount (NPR)</label>
+                    <input type="number" step="0.01" name="amount" class="form-control" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary w-100">Confirm Transfer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock content %}
